@@ -2,6 +2,11 @@
 - name: Converge
   hosts: all
   become: true
+  pre_tasks:
+    - name: install python3-docker
+      apt:
+        name: python3-docker
+        state: present
   roles:
     - role: akkerman.docker
     - role: akkerman.swarm

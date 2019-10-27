@@ -28,7 +28,9 @@
 
 - name: initialize swarm on leader
   tags: swarm
-  command: 'docker swarm init --advertise-addr {{ hostvars[docker_swarm_leader]["docker_swarm_ip"] }}'
+  docker_swarm:
+    state: present
+    advertise_addr: '{{ hostvars[docker_swarm_leader]["docker_swarm_ip"] }}'
   when:
     - docker_swarm_inactive
     - inventory_hostname == docker_swarm_leader
@@ -49,10 +51,11 @@
 
 - name: join manager to cluster
   tags: swarm
-  command: >
-    docker swarm join
-    --token {{ hostvars[docker_swarm_leader]['docker_swarm_join_token_manager'].stdout }}
-    {{ hostvars[docker_swarm_leader]["docker_swarm_ip"] }}:2377
+  docker_swarm:
+    state: join
+    join_token: "{{ hostvars[docker_swarm_leader]['docker_swarm_join_token_manager'].stdout }}"
+    advertise_addr: '{{ hostvars[docker_swarm_leader]["docker_swarm_ip"] }}'
+    remote_addrs: ["{{ hostvars[docker_swarm_leader]['docker_swarm_ip'] }}:2377"]
   when:
     - docker_swarm_inactive
     - inventory_hostname != docker_swarm_leader
@@ -60,10 +63,11 @@
 
 - name: join worker to cluster
   tags: swarm
-  command: >
-    docker swarm join
-    --token {{ hostvars[docker_swarm_leader]['docker_swarm_join_token_worker'].stdout }}
-    {{ hostvars[docker_swarm_leader]["docker_swarm_ip"] }}:2377
+  docker_swarm:
+    state: join
+    join_token: "{{ hostvars[docker_swarm_leader]['docker_swarm_join_token_worker'].stdout }}"
+    advertise_addr: '{{ hostvars[docker_swarm_leader]["docker_swarm_ip"] }}'
+    remote_addrs: ["{{ hostvars[docker_swarm_leader]['docker_swarm_ip'] }}:2377"]
   when:
     - docker_swarm_inactive
     - inventory_hostname != docker_swarm_leader

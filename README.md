@@ -1,40 +1,60 @@
-Role Name
+Ansible Role for Docker Swarm
 =========
 
-A brief description of the role goes here.
+Configures docker swarm on ubuntu bionic.
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should
-be mentioned here. For instance, if the role uses the EC2 module, it may be a
-good idea to mention in this section that the boto package is required.
+None
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including
-any variables that are in defaults/main.yml, vars/main.yml, and any variables
-that can/should be set via parameters to the role. Any variables that are read
-from other roles and/or the global scope (ie. hostvars, group vars, etc.) should
-be mentioned here as well.
+Role variables with their defaults:
+
+```yml
+docker_swarm_leader: "{{ groups['docker_swarm_managers'][0] }}"
+docker_swarm_interface: "eth1"
+```
+
+The first entry in the inventory group `docker_swarm_managers` will be the one that's initialized first and all subsequent managers and workers will join. When changing this, make sure the node is also in the `docker_swarm_mangers` for consistency.
+
+The ipv4 address will be gathered from the ethernet interface specified by `docker_swarm_interface`. This is the address the `docker_swarm_leader` will listen on and should be reachable by all other nodes that want to join the cluster. Check the docker swarm documentation, to know about [open protocols and ports between the hosts](https://docs.docker.com/engine/swarm/swarm-tutorial/#open-protocols-and-ports-between-the-hosts).
+
 
 Dependencies
 ------------
 
-A list of other roles hosted on Galaxy should go here, plus any details in
-regards to parameters that may need to be set for other roles, or variables that
-are used from other roles.
+None, just make sure that:
+
+1. Docker is installed
+2. The user running the playbook belongs to docker group (or specify become: yes in the playbook)
 
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables
-passed in as parameters) is always nice for users too:
+```yaml
+---
+- hosts: all
+    roles:
+        - akkerman.swarm
+```
 
-    - hosts: servers
-      roles:
-         - { role: akkerman.swarm, x: 42 }
+Example inventory
+-----------------
+
+```ini
+[docker_swarm_managers]
+node-0
+
+[docker_swarm_workers]
+node-1
+node-2
+```
+
+A minimum of one host should be in the `docker_swarm_managers` group. 
+The role only changes the host if the swarm on that node is inactive, i.e. you cannot move a node to another group and expect the cluster to adapt.
 
 License
 -------
@@ -44,5 +64,4 @@ BSD
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a
-website (HTML is not allowed).
+[Marcel Akkerman](https://github.com/akkerman)

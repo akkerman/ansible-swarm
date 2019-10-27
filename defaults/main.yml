@@ -1,2 +1,4 @@
 ---
 # defaults file for akkerman.swarm
+docker_swarm_leader: "{{ groups['docker_swarm_managers'][0] }}"
+docker_swarm_leader_interface: "eth0"

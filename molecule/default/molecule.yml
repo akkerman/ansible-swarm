@@ -10,7 +10,9 @@ driver:
 lint:
   name: yamllint
 platforms:
-  - name: instance-1
+  - name: single
+    groups:
+      - docker_swarm_managers
     interfaces:
       - auto_config: true
         network_name: private_network

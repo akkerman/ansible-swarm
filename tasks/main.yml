@@ -15,7 +15,7 @@
 
 - name: check swarm mode status
   tags: swarm
-  command: docker info
+  command: 'docker info'
   register: 'docker_info'
   changed_when: false
   check_mode: no
@@ -24,72 +24,47 @@
   tags: swarm
   set_fact:
     docker_swarm_inactive: "{{ 'Swarm: inactive' in docker_info.stdout }}"
-    docker_swarm_leader_ip: "{{ vars['ansible_' + docker_swarm_leader_interface]['ipv4']['address'] }}"
+    docker_swarm_ip: "{{ vars['ansible_' + docker_swarm_interface]['ipv4']['address'] }}"
 
-# docker_swarm_manager_leader
 - name: initialize swarm on leader
   tags: swarm
-  command: docker swarm init --advertise-addr {{ docker_swarm_leader_ip }}
+  command: 'docker swarm init --advertise-addr {{ hostvars[docker_swarm_leader]["docker_swarm_ip"] }}'
   when:
     - docker_swarm_inactive
     - inventory_hostname == docker_swarm_leader
 
-
 - name: capture manager join token
   tags: swarm
-  command: docker swarm join-token -q manager
+  command: 'docker swarm join-token -q manager'
   changed_when: false
   register: 'docker_swarm_join_token_manager'
   when: inventory_hostname == docker_swarm_leader
 
 - name: capture worker join token
   tags: swarm
-  command: docker swarm join-token -q worker
+  command: 'docker swarm join-token -q worker'
   changed_when: false
   register: 'docker_swarm_join_token_worker'
   when: inventory_hostname == docker_swarm_leader
-
-
-# docker_swarm_managers
-- name: copy swarm token from leader to current manager
-  tags: swarm
-  set_fact:
-    docker_swarm_worker_token: "{{ hostvars[docker_swarm_leader]['docker_swarm_join_token_manager'] }}"
-  changed_when: false
-  when:
-    - docker_swarm_inactive
-    - inventory_hostname != docker_swarm_leader
-    - inventory_hostname in docker_swarm_managers
 
 - name: join manager to cluster
   tags: swarm
   command: >
     docker swarm join
-    --token {{ docker_swarm_join_token_manager.stdout }}
-    {{ docker_swarm_leader_ip }}
+    --token {{ hostvars[docker_swarm_leader]['docker_swarm_join_token_manager'].stdout }}
+    {{ hostvars[docker_swarm_leader]["docker_swarm_ip"] }}:2377
   when:
     - docker_swarm_inactive
     - inventory_hostname != docker_swarm_leader
-    - inventory_hostname in docker_swarm_managers
-
-# docker_swarm_workers
-- name: copy swarm token from leader to current worker
-  tags: swarm
-  set_fact:
-    docker_swarm_worker_token: "{{ hostvars[docker_swarm_leader]['docker_swarm_join_token_worker'] }}"
-  changed_when: false
-  when:
-    - docker_swarm_inactive
-    - inventory_hostname != docker_swarm_leader
-    - inventory_hostname in docker_swarm_workers
+    - "'docker_swarm_managers' in group_names"
 
 - name: join worker to cluster
   tags: swarm
   command: >
     docker swarm join
-    --token {{ docker_swarm_join_token_worker.stdout }}
-    {{ docker_swarm_leader_ip }}
+    --token {{ hostvars[docker_swarm_leader]['docker_swarm_join_token_worker'].stdout }}
+    {{ hostvars[docker_swarm_leader]["docker_swarm_ip"] }}:2377
   when:
     - docker_swarm_inactive
     - inventory_hostname != docker_swarm_leader
-    - inventory_hostname in docker_swarm_workers
+    - "'docker_swarm_workers' in group_names"

@@ -1,54 +1,44 @@
 ---
 # tasks file for akkerman.swarm
-#
 
 - name: get service facts
-  tags: swarm
   service_facts:
 
 - name: check docker is installed
-  tags: swarm
   fail:
     msg: Please install and start docker first
   when: ansible_facts.services["docker.service"] is not defined
 
-
 - name: check swarm mode status
-  tags: swarm
   command: 'docker info'
   register: 'docker_info'
   changed_when: false
   check_mode: no
 
 - name: set swarm facts
-  tags: swarm
   set_fact:
     docker_swarm_inactive: "{{ 'Swarm: inactive' in docker_info.stdout }}"
     docker_swarm_ip: "{{ vars['ansible_' + docker_swarm_interface]['ipv4']['address'] }}"
 
 - name: initialize swarm on leader
-  tags: swarm
   command: 'docker swarm init --advertise-addr {{ hostvars[docker_swarm_leader]["docker_swarm_ip"] }}'
   when:
     - docker_swarm_inactive
     - inventory_hostname == docker_swarm_leader
 
 - name: capture manager join token
-  tags: swarm
   command: 'docker swarm join-token -q manager'
   changed_when: false
   register: 'docker_swarm_join_token_manager'
   when: inventory_hostname == docker_swarm_leader
 
 - name: capture worker join token
-  tags: swarm
   command: 'docker swarm join-token -q worker'
   changed_when: false
   register: 'docker_swarm_join_token_worker'
   when: inventory_hostname == docker_swarm_leader
 
 - name: join manager to cluster
-  tags: swarm
   command: >
     docker swarm join
     --token {{ hostvars[docker_swarm_leader]['docker_swarm_join_token_manager'].stdout }}
@@ -59,7 +49,6 @@
     - "'docker_swarm_managers' in group_names"
 
 - name: join worker to cluster
-  tags: swarm
   command: >
     docker swarm join
     --token {{ hostvars[docker_swarm_leader]['docker_swarm_join_token_worker'].stdout }}

@@ -5,3 +5,4 @@
   roles:
     - role: akkerman.docker
     - role: akkerman.swarm
+      tags: [swarm]
